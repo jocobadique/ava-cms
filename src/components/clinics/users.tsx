@@ -5,16 +5,16 @@ import { Flex, Row, Col, Button, Typography, Input } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import BranchAdminsTable from "../branch-admins/table";
-import { getClinicBranchAdminsService } from "@/services/branch-admins";
-import AddModal from "../branch-admins/add";
+import ClinicUsersTable from "../clinic-users/table";
+import { getClinicUsersService } from "@/services/clinic-users";
+import AddModal from "../clinic-users/add";
 import Error from "@/components/error";
 import { AxiosError } from "axios";
 
 const { Title } = Typography;
 const { Search } = Input;
 
-export default function BranchAdmins() {
+export default function ClinicUsers() {
   const params = useParams();
   const clinicId = params.clinicId;
 
@@ -24,29 +24,25 @@ export default function BranchAdmins() {
   });
 
   const { data, error, isLoading } = useQuery({
-    queryKey: ["branch-admins", clinicId],
+    queryKey: ["clinic-users", clinicId],
     queryFn: () =>
-      getClinicBranchAdminsService(
-        clinicId,
-        pagination.current,
-        pagination.pageSize,
-      ),
+      getClinicUsersService(clinicId, pagination.current, pagination.pageSize),
     enabled: !!clinicId, // Ensure the query runs only when `clinicId` is available
   });
 
-  const clinicBranchAdmins = data?.data ?? [];
+  const clinicUsers = data?.data ?? [];
   const paginationMetadata = data?.pagination || {};
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [filteredData, setFilteredData] = useState(clinicBranchAdmins);
+  const [filteredData, setFilteredData] = useState(clinicUsers);
   const [searchValue, setSearchValue] = useState("");
 
   // Update filteredData when clinics data changes
   useEffect(() => {
-    if (JSON.stringify(filteredData) !== JSON.stringify(clinicBranchAdmins)) {
-      setFilteredData(clinicBranchAdmins);
+    if (JSON.stringify(filteredData) !== JSON.stringify(clinicUsers)) {
+      setFilteredData(clinicUsers);
     }
-  }, [clinicBranchAdmins]);
+  }, [clinicUsers]);
 
   const handleAddModalClose = () => {
     setIsAddModalOpen(false);
@@ -54,16 +50,11 @@ export default function BranchAdmins() {
 
   const handleSearch = (value: any) => {
     const lowercasedValue = value.toLowerCase();
-    const filtered = clinicBranchAdmins.filter((clinicBranchAdmin: any) => {
+    const filtered = clinicUsers.filter((clinicUser: any) => {
       return (
-        clinicBranchAdmin.display_name
-          .toLowerCase()
-          .includes(lowercasedValue) ||
-        clinicBranchAdmin.subscription
-          .toLowerCase()
-          .includes(lowercasedValue) ||
-        clinicBranchAdmin.branch_name.toLowerCase().includes(lowercasedValue) ||
-        clinicBranchAdmin.email.toLowerCase().includes(lowercasedValue)
+        clinicUser.display_name.toLowerCase().includes(lowercasedValue) ||
+        clinicUser.clinic_role.toLowerCase().includes(lowercasedValue) ||
+        clinicUser.email.toLowerCase().includes(lowercasedValue)
       );
     });
     setFilteredData(filtered);
@@ -73,7 +64,7 @@ export default function BranchAdmins() {
     const value = e.target.value;
     setSearchValue(value);
     if (value.trim() === "") {
-      setFilteredData(clinicBranchAdmins); // Reset to all data if input is cleared
+      setFilteredData(clinicUsers); // Reset to all data if input is cleared
     }
   };
 
@@ -100,7 +91,7 @@ export default function BranchAdmins() {
         <Row gutter={[16, 16]} justify="space-between" align="middle">
           <Col xs={24} sm={24} md={24} lg={16} xl={16} xxl={16}>
             <Title style={{ marginBottom: 0 }} level={3}>
-              List of Branch Admins
+              List of Users
             </Title>
           </Col>
           <Col xs={24} sm={24} md={24} lg={8} xl={8} xxl={8}>
@@ -136,7 +127,7 @@ export default function BranchAdmins() {
             </Row>
           </Col>
         </Row>
-        <BranchAdminsTable
+        <ClinicUsersTable
           data={filteredData}
           isLoading={isLoading}
           setFilteredData={setFilteredData}

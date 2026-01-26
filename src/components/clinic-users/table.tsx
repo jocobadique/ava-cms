@@ -20,11 +20,12 @@ import { Edit, Eye, RotateCw, Trash } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import EditModal from "./edit";
 import DetailsModal from "./details";
-import { deleteClinicBranchAdminService } from "@/services/branch-admins";
+import { deleteClinicUserService } from "@/services/clinic-users";
+import { replaceCharactersWithSpace } from "@/utilities/helpers/replaceCharactersWithSpace";
 
 const { Title, Text } = Typography;
 
-interface BranchAdminsTableProps {
+interface ClinicUsersTableProps {
   data: any;
   isLoading: boolean;
   setFilteredData: React.Dispatch<React.SetStateAction<any>>;
@@ -32,13 +33,13 @@ interface BranchAdminsTableProps {
   onTableChange: (pagination: any, filter: any, sorter: any) => void;
 }
 
-export default function BranchAdminsTable({
+export default function ClinicUsersTable({
   data,
   isLoading,
   setFilteredData,
   pagination,
   onTableChange,
-}: BranchAdminsTableProps) {
+}: ClinicUsersTableProps) {
   const queryClient = useQueryClient();
   const { modal, message } = App.useApp();
   const {
@@ -79,7 +80,7 @@ export default function BranchAdminsTable({
 
   // Define Delete mutation using useMutation
   const deleteMutation = useMutation({
-    mutationFn: (value: any) => deleteClinicBranchAdminService(value),
+    mutationFn: (value: any) => deleteClinicUserService(value),
   });
 
   const handleDelete = (row: any) => {
@@ -89,7 +90,7 @@ export default function BranchAdminsTable({
         <>
           <Space direction="vertical">
             <Text type="secondary">
-              Are you sure you want to delete this branch admin?
+              Are you sure you want to delete this clinic user?
             </Text>
             <Text strong>{row?.display_name}</Text>
           </Space>
@@ -100,24 +101,28 @@ export default function BranchAdminsTable({
       okText: "Confirm",
       cancelText: "Cancel",
       onOk: async () => {
-        const clinicBranchAdminId = row.id;
-        deleteMutation.mutate(clinicBranchAdminId, {
+        const clinicUserId = row.id;
+        deleteMutation.mutate(clinicUserId, {
           onError: (error: any) => {
             const errorMessage =
               error?.response?.data?.error?.detail ||
-              "Failed to delete clinic branch admin.";
+              "Failed to delete clinic user.";
             message.error({ content: errorMessage });
           },
           onSuccess: () => {
             // Remove the row from the filteredData state on successful deletion
             setFilteredData((prev: any) =>
-              prev.filter((item: any) => item.id !== clinicBranchAdminId),
+              prev.filter((item: any) => item.id !== clinicUserId),
             );
-            message.success("Branch admin deleted successfully.");
+            message.success("Clinic user deleted successfully.");
           },
           onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: ["branch-admins"] });
             queryClient.invalidateQueries({ queryKey: ["clinic-users"] });
+            queryClient.invalidateQueries({ queryKey: ["clinic-admins"] });
+            queryClient.invalidateQueries({ queryKey: ["branch-admins"] });
+            queryClient.invalidateQueries({ queryKey: ["branch-staffs"] });
+            queryClient.invalidateQueries({ queryKey: ["patients"] });
+            queryClient.invalidateQueries({ queryKey: ["practitioners"] });
           },
         });
       },
@@ -143,17 +148,13 @@ export default function BranchAdminsTable({
       ),
     },
     {
-      title: "Branch",
-      dataIndex: "branch_name",
-      key: "branch_name",
-      render: (text) => <Text>{text}</Text>,
-    },
-    {
-      title: "Subscription",
-      dataIndex: "subscription",
-      key: "subscription",
+      title: "Role",
+      dataIndex: "clinic_role",
+      key: "clinic_role",
       render: (text) => (
-        <Text style={{ textTransform: "uppercase" }}>{text}</Text>
+        <Text style={{ textTransform: "capitalize" }}>
+          {replaceCharactersWithSpace(text, "_")}
+        </Text>
       ),
     },
     {

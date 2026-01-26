@@ -41,6 +41,12 @@ export function handleFormErrors(
       return;
     }
 
+    if (fieldErrors.account) {
+      // ✅ Handle `account` explicitly
+      message.error({ content: fieldErrors.account.email.null });
+      return;
+    }
+
     // ✅ Handle non_field_errors first (and skip errorMessage if they exist)
     if (
       Array.isArray(fieldErrors.non_field_errors) &&

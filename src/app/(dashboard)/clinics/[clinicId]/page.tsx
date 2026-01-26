@@ -7,7 +7,9 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getClinicService } from "@/services/clinics";
 import ClinicInfo from "@/components/clinics/info";
+import ClinicUsers from "@/components/clinics/users";
 import Practitioners from "@/components/clinics/practitioners";
+import ClinicPatients from "@/components/clinics/patients";
 import ClinicAdmins from "@/components/clinics/clinic-admins";
 import BranchAdmins from "@/components/clinics/branch-admins";
 import BranchStaffs from "@/components/clinics/branch-staffs";
@@ -46,43 +48,53 @@ export default function ClinicIdPage({
 
   const items: TabsProps["items"] = [
     {
-      key: "1",
+      key: "clinic-info",
       label: "Clinic Info",
       children: <ClinicInfo data={data} />,
     },
     {
-      key: "2",
+      key: "users",
+      label: "Users",
+      children: <ClinicUsers />,
+    },
+    {
+      key: "patients",
+      label: "Patients",
+      children: <ClinicPatients />,
+    },
+    {
+      key: "pracititioners",
       label: "Practitioners",
       children: <Practitioners />,
     },
     {
-      key: "3",
+      key: "clinic-admins",
       label: "Clinic Admins",
       children: <ClinicAdmins />,
     },
     {
-      key: "4",
+      key: "branch-admins",
       label: "Branch Admins",
       children: <BranchAdmins />,
     },
     {
-      key: "5",
-      label: "Branch Staff",
+      key: "staff",
+      label: "Staff",
       children: <BranchStaffs />,
     },
     {
-      key: "6",
+      key: "branches",
       label: "Branches",
       children: <Branches />,
     },
     {
-      key: "7",
+      key: "mco",
       label: "MCO",
       children: <McoEntry />,
     },
 
     {
-      key: "8",
+      key: "billing",
       label: "Billing",
       children: <Billings />,
     },

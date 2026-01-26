@@ -59,6 +59,7 @@ export default function AddModal({ isOpen, onClose }: AddProps) {
     onSuccess: async () => {
       message.success({ content: "Practitioner created successfully." });
       queryClient.invalidateQueries({ queryKey: ["practitioner"] });
+      queryClient.invalidateQueries({ queryKey: ["clinic-users"] });
       onClose();
     },
     onSettled: async () => {

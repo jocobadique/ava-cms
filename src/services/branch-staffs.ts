@@ -1,8 +1,17 @@
 import { request } from "@/utilities/request";
 
-export async function getClinicBranchStaffsService(clinicId: any) {
-  const response = await request.get(`/account/clinic/${clinicId}/staff/`);
-  return response.data?.data;
+export async function getClinicBranchStaffsService(
+  clinicId: any,
+  page: any,
+  page_size: any
+) {
+  const response = await request.get(
+    `/account/clinic/${clinicId}/staff/?page=${page}&page_size=${page_size}`
+  );
+  return {
+    data: response?.data?.data,
+    pagination: response?.data?.pagination,
+  };
 }
 
 export async function createClinicBranchStaffService(branchStaff: any) {

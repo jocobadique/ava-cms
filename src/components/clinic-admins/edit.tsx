@@ -53,6 +53,7 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
       message.success({ content: "Clinic admin updated successfully." });
 
       queryClient.invalidateQueries({ queryKey: ["clinic-admins"] });
+      queryClient.invalidateQueries({ queryKey: ["clinic-users"] });
       onClose();
     },
     onSettled: async () => {
@@ -219,6 +220,7 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
               ]}
             >
               <Select
+                disabled
                 size="large"
                 placeholder="Select Clinic Role"
                 options={[

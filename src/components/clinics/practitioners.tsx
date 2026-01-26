@@ -18,20 +18,35 @@ export default function Practitioners() {
   const params = useParams();
   const clinicId = params.clinicId;
 
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+  });
+
   const { data, error, isLoading } = useQuery({
-    queryKey: ["practitioner", clinicId],
-    queryFn: () => getClinicPractitionersService(clinicId),
+    queryKey: ["practitioner", clinicId, pagination],
+    queryFn: () =>
+      getClinicPractitionersService(
+        clinicId,
+        pagination.current,
+        pagination.pageSize,
+      ),
     enabled: !!clinicId, // Ensure the query runs only when `clinicId` is available
   });
 
+  const practitioners = data?.data ?? [];
+  const paginationMetadata = data?.pagination || {};
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [filteredData, setFilteredData] = useState(data);
+  const [filteredData, setFilteredData] = useState(practitioners);
   const [searchValue, setSearchValue] = useState("");
 
   // Update filteredData when clinics data changes
   useEffect(() => {
-    setFilteredData(data);
-  }, [data]);
+    if (JSON.stringify(filteredData) !== JSON.stringify(practitioners)) {
+      setFilteredData(practitioners);
+    }
+  }, [practitioners]);
 
   const handleAddModalClose = () => {
     setIsAddModalOpen(false);
@@ -39,12 +54,16 @@ export default function Practitioners() {
 
   const handleSearch = (value: any) => {
     const lowercasedValue = value.toLowerCase();
-    const filtered = data.filter((clinic: any) => {
+    const filtered = practitioners.filter((practitioner: any) => {
       return (
-        clinic.account.display_name.toLowerCase().includes(lowercasedValue) ||
-        clinic.account.subscription.toLowerCase().includes(lowercasedValue) ||
-        clinic.practice.toLowerCase().includes(lowercasedValue) ||
-        clinic.branch_name.toLowerCase().includes(lowercasedValue)
+        practitioner.account.display_name
+          .toLowerCase()
+          .includes(lowercasedValue) ||
+        practitioner.account.subscription
+          .toLowerCase()
+          .includes(lowercasedValue) ||
+        practitioner.practice.toLowerCase().includes(lowercasedValue) ||
+        practitioner.branch_name.toLowerCase().includes(lowercasedValue)
       );
     });
     setFilteredData(filtered);
@@ -54,8 +73,15 @@ export default function Practitioners() {
     const value = e.target.value;
     setSearchValue(value);
     if (value.trim() === "") {
-      setFilteredData(data); // Reset to all data if input is cleared
+      setFilteredData(practitioners); // Reset to all data if input is cleared
     }
+  };
+
+  const handleTableChange = (newPagination: any) => {
+    setPagination({
+      current: newPagination.current,
+      pageSize: newPagination.pageSize,
+    });
   };
 
   if (error) {
@@ -74,7 +100,7 @@ export default function Practitioners() {
         <Row gutter={[16, 16]} justify="space-between" align="middle">
           <Col xs={24} sm={24} md={24} lg={16} xl={16} xxl={16}>
             <Title style={{ marginBottom: 0 }} level={3}>
-              Lists of Practitioners
+              List of Practitioners
             </Title>
           </Col>
           <Col xs={24} sm={24} md={24} lg={8} xl={8} xxl={8}>
@@ -112,8 +138,16 @@ export default function Practitioners() {
         </Row>
         <PractitionersTable
           data={filteredData}
-          isLoading={isLoading}
           setFilteredData={setFilteredData}
+          isLoading={isLoading}
+          pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: paginationMetadata.count || 0,
+            showTotal: (total: any, range: any) =>
+              `${range[0]}-${range[1]} of ${total} items`,
+          }}
+          onTableChange={handleTableChange}
         />
       </Flex>
       {isAddModalOpen && (

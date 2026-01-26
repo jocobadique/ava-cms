@@ -1,6 +1,5 @@
 "use client";
 
-import { updateClinicPractitionersService } from "@/services/practitioners";
 import {
   App,
   Button,
@@ -10,11 +9,18 @@ import {
   Row,
   Col,
   Divider,
+  DatePicker,
   Select,
 } from "antd";
 import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import dayjs from "dayjs";
+import { updatePatientMcoService } from "@/services/mco-patient";
+import { getMcosService } from "@/services/mco";
 import { handleFormErrors } from "@/utilities/helpers/handleFormErrors";
+import { useParams } from "next/navigation";
+
+const { TextArea } = Input;
 
 interface EditProps {
   data: any;
@@ -24,15 +30,25 @@ interface EditProps {
 
 export default function EditModal({ data, isOpen, onClose }: EditProps) {
   const queryClient = useQueryClient();
+  const params = useParams();
+  const patientId = params.patientId;
   const { message } = App.useApp();
   const [form] = Form.useForm();
   const [isLoading, setLoading] = useState(false);
   const [isFormChanged, setIsFormChanged] = useState(false);
 
+  const { data: mcosData, isLoading: isMcosDataLoading } = useQuery({
+    queryKey: ["mcos"],
+    queryFn: getMcosService,
+  });
+
   // Define update mutation using useMutation
   const updateMutation = useMutation({
     mutationFn: (values: any) =>
-      updateClinicPractitionersService(values.id, { ...values }),
+      updatePatientMcoService(patientId, values?.id, {
+        ...values,
+        valid_until: values.valid_until.format("YYYY-MM-DD"),
+      }),
     onMutate: async () => {
       setLoading(true);
     },
@@ -40,10 +56,9 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
       handleFormErrors(error, form, message);
     },
     onSuccess: async () => {
-      message.success({ content: "Practitioner updated successfully." });
-      queryClient.invalidateQueries({ queryKey: ["practitioner"] });
-      queryClient.invalidateQueries({ queryKey: ["practitioners"] });
-      queryClient.invalidateQueries({ queryKey: ["clinic-users"] });
+      message.success({ content: "Patient mco updated successfully." });
+
+      queryClient.invalidateQueries({ queryKey: ["mco-patients"] });
       onClose();
     },
     onSettled: async () => {
@@ -54,7 +69,12 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
   // Set initial form values when modal opens or data changes
   useEffect(() => {
     if (isOpen && data) {
-      form.setFieldsValue(data);
+      form.setFieldsValue({
+        ...data,
+        valid_until: data?.valid_until
+          ? dayjs(data.valid_until, "YYYY-MM-DD")
+          : null,
+      });
     }
   }, [isOpen, data, form]);
 
@@ -69,7 +89,7 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
 
   return (
     <Modal
-      title="Edit Practitioner"
+      title="Edit patient mco"
       centered
       mask={false}
       open={isOpen}
@@ -114,124 +134,88 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
         <Row gutter={[16, 0]}>
           <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
             <Form.Item
-              label="Display Name"
-              name={["account", "display_name"]}
+              label="Healthcare provider"
+              name={["mco", "id"]}
               rules={[
                 {
                   required: true,
-                  message: "Display name is required",
-                },
-              ]}
-            >
-              <Input size="large" placeholder="Display Name" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
-            <Form.Item
-              label="First Name"
-              name={["account", "first_name"]}
-              rules={[
-                {
-                  required: true,
-                  message: "First name is required",
-                },
-              ]}
-            >
-              <Input size="large" placeholder="First Name" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
-            <Form.Item
-              label="Last Name"
-              name={["account", "last_name"]}
-              rules={[
-                {
-                  required: true,
-                  message: "Last name is required",
-                },
-              ]}
-            >
-              <Input size="large" placeholder="Last name" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
-            <Form.Item label="Middle Name" name={["account", "middle_name"]}>
-              <Input size="large" placeholder="Middle name" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
-            <Form.Item
-              label="Email"
-              name={["account", "email"]}
-              rules={[
-                {
-                  required: true,
-                  message: "Email is required",
-                  type: "email",
-                },
-              ]}
-            >
-              <Input size="large" placeholder="Email" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
-            <Form.Item
-              label="Clinic"
-              name="clinic_name"
-              rules={[
-                {
-                  required: true,
-                  message: "Clinic is required",
-                },
-              ]}
-            >
-              <Input disabled size="large" placeholder="Clinic" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
-            <Form.Item
-              label="Practice"
-              name="practice"
-              rules={[
-                {
-                  required: true,
-                  message: "Practice is required",
+                  message: "Healthcare provider is required",
                 },
               ]}
             >
               <Select
+                loading={isMcosDataLoading}
                 size="large"
-                placeholder="Select Practice"
-                options={[
-                  { value: "unknown", label: "Unknown" },
-                  { value: "dental", label: "Dental" },
-                  { value: "ophthal", label: "Opthal" },
-                  { value: "pedia", label: "Pedia" },
-                  { value: "ent", label: "ENT" },
-                  { value: "internal", label: "Internal" },
-                  { value: "derma", label: "Derma" },
-                  { value: "obgyn", label: "Obgyn" },
-                ]}
+                placeholder="Select Healthcare provider"
+                allowClear
+                showSearch
+                filterOption={(input, option) =>
+                  (option?.label as string)
+                    ?.toLowerCase()
+                    .includes(input.toLowerCase())
+                }
+                options={
+                  mcosData?.map((mco: any) => ({
+                    value: mco.id,
+                    label: mco.name,
+                  })) || []
+                }
               />
             </Form.Item>
           </Col>
           <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
             <Form.Item
-              label="License Number"
-              name="license_number"
+              label="MCO number"
+              name="mco_number"
               rules={[
                 {
                   required: true,
-                  message: "License number is required",
+                  message: "Mco number is required",
                 },
               ]}
             >
-              <Input size="large" placeholder="License number" />
+              <Input size="large" placeholder="Mco number" />
             </Form.Item>
           </Col>
           <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
-            <Form.Item label="Password" name="password">
-              <Input.Password size="large" placeholder="Password" />
+            <Form.Item
+              label="Plan"
+              name="plan"
+              rules={[
+                {
+                  required: true,
+                  message: "Plan is required",
+                },
+              ]}
+            >
+              <Input size="large" placeholder="Plan" />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
+            <Form.Item
+              label="Valid until"
+              name="valid_until"
+              rules={[
+                {
+                  required: true,
+                  message: "Valid until is required",
+                },
+              ]}
+            >
+              <DatePicker style={{ display: "block" }} size="large" />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={24} md={24} lg={24} xl={24} xxl={24}>
+            <Form.Item
+              label="Notes"
+              name="notes"
+              rules={[
+                {
+                  required: false,
+                },
+              ]}
+            >
+              <TextArea rows={4} placeholder="Notes" />
             </Form.Item>
           </Col>
         </Row>

@@ -16,25 +16,38 @@ import type { TableProps } from "antd";
 import type { MenuProps } from "antd";
 import { EllipsisOutlined } from "@ant-design/icons";
 import React, { useState } from "react";
-import { Edit, Eye, RotateCw, Trash } from "lucide-react";
+import {
+  Edit,
+  Eye,
+  Network,
+  RotateCw,
+  Stethoscope,
+  Trash,
+  User,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import EditModal from "./edit";
 import { deleteClinicPractitionersService } from "@/services/practitioners";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import AssociateModal from "./associate";
 
 const { Title, Text } = Typography;
 
 interface PractitionersTableProps {
   data: any;
-  isLoading: boolean;
   setFilteredData: React.Dispatch<React.SetStateAction<any>>;
+  isLoading: boolean;
+  pagination: any;
+  onTableChange: (pagination: any, filter: any, sorter: any) => void;
 }
 
 export default function PractitionersTable({
   data,
-  isLoading,
   setFilteredData,
+  isLoading,
+  pagination,
+  onTableChange,
 }: PractitionersTableProps) {
   const queryClient = useQueryClient();
   const { modal, message } = App.useApp();
@@ -44,11 +57,8 @@ export default function PractitionersTable({
   const router = useRouter();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAssociateModalOpen, setIsAssociateModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<any>(null);
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-  });
 
   const handleMenuClick = (key: string, row: any) => {
     switch (key) {
@@ -62,6 +72,10 @@ export default function PractitionersTable({
       case "3": // Delete
         handleDelete(row);
         break;
+      case "4": // Associate
+        setSelectedRow(row); // Set selected row data
+        setIsAssociateModalOpen(true); // Open the modal
+        break;
       default:
         break;
     }
@@ -69,6 +83,11 @@ export default function PractitionersTable({
 
   const handleEditModalClose = () => {
     setIsEditModalOpen(false);
+    setSelectedRow(null);
+  };
+
+  const handleAssociateModalClose = () => {
+    setIsAssociateModalOpen(false);
     setSelectedRow(null);
   };
 
@@ -106,13 +125,14 @@ export default function PractitionersTable({
           onSuccess: () => {
             // Remove the row from the filteredData state on successful deletion
             setFilteredData((prev: any) =>
-              prev.filter((item: any) => item.id !== practitionerId)
+              prev.filter((item: any) => item.id !== practitionerId),
             );
             message.success("Practitioner deleted successfully.");
           },
           onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ["practitioner"] });
             queryClient.invalidateQueries({ queryKey: ["practitioners"] });
+            queryClient.invalidateQueries({ queryKey: ["clinic-users"] });
           },
         });
       },
@@ -177,6 +197,15 @@ export default function PractitionersTable({
             icon: <Trash size={16} />,
             onClick: () => handleMenuClick("3", row),
           },
+          {
+            type: "divider",
+          },
+          {
+            key: "4",
+            label: "Branch Association",
+            icon: <Network size={16} />,
+            onClick: () => handleMenuClick("4", row),
+          },
         ];
         return (
           <>
@@ -193,13 +222,6 @@ export default function PractitionersTable({
       align: "center",
     },
   ];
-
-  const handleTableChange = (pagination: any) => {
-    setPagination({
-      current: pagination.current,
-      pageSize: pagination.pageSize,
-    });
-  };
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
@@ -250,22 +272,22 @@ export default function PractitionersTable({
         rowKey="id"
         columns={columns}
         dataSource={data || []}
-        pagination={{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          total: data ? data.length : 0,
-          showSizeChanger: false,
-          showTotal: (total, range) =>
-            `${range[0]}-${range[1]} of ${total} items`,
-        }}
+        pagination={pagination}
         rowSelection={rowSelection}
-        onChange={handleTableChange}
+        onChange={onTableChange}
       />
       {isEditModalOpen && (
         <EditModal
           data={selectedRow}
           isOpen={isEditModalOpen}
           onClose={handleEditModalClose}
+        />
+      )}
+      {isAssociateModalOpen && (
+        <AssociateModal
+          data={selectedRow}
+          isOpen={isAssociateModalOpen}
+          onClose={handleAssociateModalClose}
         />
       )}
     </>

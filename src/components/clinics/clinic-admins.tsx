@@ -18,20 +18,31 @@ export default function ClinicAdmins() {
   const params = useParams();
   const clinicId = params.clinicId;
 
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+  });
+
   const { data, error, isLoading } = useQuery({
     queryKey: ["clinic-admins", clinicId],
-    queryFn: () => getClinicAdminsService(clinicId),
+    queryFn: () =>
+      getClinicAdminsService(clinicId, pagination.current, pagination.pageSize),
     enabled: !!clinicId, // Ensure the query runs only when `clinicId` is available
   });
 
+  const clinicAdmins = data?.data ?? [];
+  const paginationMetadata = data?.pagination || {};
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [filteredData, setFilteredData] = useState(data);
+  const [filteredData, setFilteredData] = useState(clinicAdmins);
   const [searchValue, setSearchValue] = useState("");
 
   // Update filteredData when clinics data changes
   useEffect(() => {
-    setFilteredData(data);
-  }, [data]);
+    if (JSON.stringify(filteredData) !== JSON.stringify(clinicAdmins)) {
+      setFilteredData(clinicAdmins);
+    }
+  }, [clinicAdmins]);
 
   const handleAddModalClose = () => {
     setIsAddModalOpen(false);
@@ -39,7 +50,7 @@ export default function ClinicAdmins() {
 
   const handleSearch = (value: any) => {
     const lowercasedValue = value.toLowerCase();
-    const filtered = data.filter((clinicAdmin: any) => {
+    const filtered = clinicAdmins.filter((clinicAdmin: any) => {
       return (
         clinicAdmin.display_name.toLowerCase().includes(lowercasedValue) ||
         clinicAdmin.subscription.toLowerCase().includes(lowercasedValue) ||
@@ -53,8 +64,15 @@ export default function ClinicAdmins() {
     const value = e.target.value;
     setSearchValue(value);
     if (value.trim() === "") {
-      setFilteredData(data); // Reset to all data if input is cleared
+      setFilteredData(clinicAdmins); // Reset to all data if input is cleared
     }
+  };
+
+  const handleTableChange = (newPagination: any) => {
+    setPagination({
+      current: newPagination.current,
+      pageSize: newPagination.pageSize,
+    });
   };
 
   if (error) {
@@ -73,7 +91,7 @@ export default function ClinicAdmins() {
         <Row gutter={[16, 16]} justify="space-between" align="middle">
           <Col xs={24} sm={24} md={24} lg={16} xl={16} xxl={16}>
             <Title style={{ marginBottom: 0 }} level={3}>
-              Lists of Clinic Admins
+              List of Clinic Admins
             </Title>
           </Col>
           <Col xs={24} sm={24} md={24} lg={8} xl={8} xxl={8}>
@@ -113,6 +131,14 @@ export default function ClinicAdmins() {
           data={filteredData}
           isLoading={isLoading}
           setFilteredData={setFilteredData}
+          pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: paginationMetadata.count || 0,
+            showTotal: (total: any, range: any) =>
+              `${range[0]}-${range[1]} of ${total} items`,
+          }}
+          onTableChange={handleTableChange}
         />
       </Flex>
       {isAddModalOpen && (

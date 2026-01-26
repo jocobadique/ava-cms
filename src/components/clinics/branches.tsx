@@ -74,7 +74,7 @@ export default function Branches() {
         <Row gutter={[16, 16]} justify="space-between" align="middle">
           <Col xs={24} sm={24} md={24} lg={16} xl={16} xxl={16}>
             <Title style={{ marginBottom: 0 }} level={3}>
-              Lists of Branches
+              List of Branches
             </Title>
           </Col>
           <Col xs={24} sm={24} md={24} lg={8} xl={8} xxl={8}>

@@ -122,7 +122,7 @@ export default function DetailsModal({ data, isOpen, onClose }: DetailsProps) {
 
   return (
     <Modal
-      title="Staff Details"
+      title="Branch Staff Details"
       centered
       mask={false}
       open={isOpen}

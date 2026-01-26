@@ -36,19 +36,30 @@ export default function PractitionersPage() {
   } = theme.useToken();
   const user = useUserStore((state) => state.user);
 
-  const { data, error, isLoading } = useQuery({
-    queryKey: ["practitioners"],
-    queryFn: getPractitionersService,
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
   });
 
+  const { data, error, isLoading } = useQuery({
+    queryKey: ["practitioners", pagination],
+    queryFn: () =>
+      getPractitionersService(pagination.current, pagination.pageSize),
+  });
+
+  const practitioners = data?.data ?? [];
+  const paginationMetadata = data?.pagination || {};
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [filteredData, setFilteredData] = useState(data);
+  const [filteredData, setFilteredData] = useState(practitioners);
   const [searchValue, setSearchValue] = useState("");
 
   // Update filteredData when clinics data changes
   useEffect(() => {
-    setFilteredData(data);
-  }, [data]);
+    if (JSON.stringify(filteredData) !== JSON.stringify(practitioners)) {
+      setFilteredData(practitioners);
+    }
+  }, [practitioners]);
 
   const handleCreateModalClose = () => {
     setIsCreateModalOpen(false);
@@ -56,7 +67,7 @@ export default function PractitionersPage() {
 
   const handleSearch = (value: any) => {
     const lowercasedValue = value.toLowerCase();
-    const filtered = data.filter((practitioner: any) => {
+    const filtered = practitioners.filter((practitioner: any) => {
       return (
         practitioner.account.display_name
           .toLowerCase()
@@ -75,8 +86,15 @@ export default function PractitionersPage() {
     const value = e.target.value;
     setSearchValue(value);
     if (value.trim() === "") {
-      setFilteredData(data); // Reset to all data if input is cleared
+      setFilteredData(practitioners); // Reset to all data if input is cleared
     }
+  };
+
+  const handleTableChange = (newPagination: any) => {
+    setPagination({
+      current: newPagination.current,
+      pageSize: newPagination.pageSize,
+    });
   };
 
   if (isLoading) {
@@ -152,7 +170,7 @@ export default function PractitionersPage() {
                       icon={<CloudDownload />}
                       size="large"
                       onClick={() => {
-                        const csvData = (filteredData || []).map(
+                        const csvData = (practitioners || []).map(
                           (item: any) => ({
                             ...item,
                             first_name: item.account?.first_name ?? "",
@@ -223,8 +241,16 @@ export default function PractitionersPage() {
           </Row>
           <PractitionersTable
             data={filteredData}
-            isLoading={isLoading}
             setFilteredData={setFilteredData}
+            isLoading={isLoading}
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: paginationMetadata.count || 0,
+              showTotal: (total: any, range: any) =>
+                `${range[0]}-${range[1]} of ${total} items`,
+            }}
+            onTableChange={handleTableChange}
           />
         </Flex>
       </Content>

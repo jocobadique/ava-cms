@@ -53,6 +53,7 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
       message.success({ content: "Branch admin updated successfully." });
 
       queryClient.invalidateQueries({ queryKey: ["branch-admins"] });
+      queryClient.invalidateQueries({ queryKey: ["clinic-users"] });
       onClose();
     },
     onSettled: async () => {

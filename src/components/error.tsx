@@ -2,6 +2,8 @@
 
 import { Button, Layout, Result, theme } from "antd";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import Cookies from "js-cookie";
 
 const { Content } = Layout;
 
@@ -18,6 +20,15 @@ export default function Error({ status }: ErrorProps) {
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  useEffect(() => {
+    const session = Cookies.get("ava_cms_session");
+
+    if (!session) {
+      router.replace("/");
+      return;
+    }
+  }, []);
 
   const getErrorContent = (): {
     status: ResultStatusType;

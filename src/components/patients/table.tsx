@@ -18,13 +18,14 @@ import { EllipsisOutlined } from "@ant-design/icons";
 import React, { useState } from "react";
 import { Edit, Eye, RotateCw, Trash } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import EditModal from "./edit";
-import DetailsModal from "./details";
-import { deleteClinicBranchAdminService } from "@/services/branch-admins";
+import { deleteClinicPatientService } from "@/services/patients";
+import { useRouter } from "next/navigation";
 
 const { Title, Text } = Typography;
 
-interface BranchAdminsTableProps {
+interface ClinicPatientsTableProps {
   data: any;
   isLoading: boolean;
   setFilteredData: React.Dispatch<React.SetStateAction<any>>;
@@ -32,28 +33,27 @@ interface BranchAdminsTableProps {
   onTableChange: (pagination: any, filter: any, sorter: any) => void;
 }
 
-export default function BranchAdminsTable({
+export default function ClinicPatientsTable({
   data,
   isLoading,
   setFilteredData,
   pagination,
   onTableChange,
-}: BranchAdminsTableProps) {
+}: ClinicPatientsTableProps) {
   const queryClient = useQueryClient();
   const { modal, message } = App.useApp();
   const {
     token: { colorPrimary },
   } = theme.useToken();
+  const router = useRouter();
 
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<any>(null);
 
   const handleMenuClick = (key: string, row: any) => {
     switch (key) {
       case "1": // View
-        setSelectedRow(row); // Set selected row data
-        setIsDetailsModalOpen(true); // Open the details modal
+        router.push(`/patients/${row.id}/`);
         break;
       case "2": // Edit
         setSelectedRow(row); // Set selected row data
@@ -67,11 +67,6 @@ export default function BranchAdminsTable({
     }
   };
 
-  const handleDetailsModalClose = () => {
-    setIsDetailsModalOpen(false);
-    setSelectedRow(null);
-  };
-
   const handleEditModalClose = () => {
     setIsEditModalOpen(false);
     setSelectedRow(null);
@@ -79,7 +74,7 @@ export default function BranchAdminsTable({
 
   // Define Delete mutation using useMutation
   const deleteMutation = useMutation({
-    mutationFn: (value: any) => deleteClinicBranchAdminService(value),
+    mutationFn: (value: any) => deleteClinicPatientService(value),
   });
 
   const handleDelete = (row: any) => {
@@ -89,7 +84,7 @@ export default function BranchAdminsTable({
         <>
           <Space direction="vertical">
             <Text type="secondary">
-              Are you sure you want to delete this branch admin?
+              Are you sure you want to delete this patient?
             </Text>
             <Text strong>{row?.display_name}</Text>
           </Space>
@@ -100,23 +95,23 @@ export default function BranchAdminsTable({
       okText: "Confirm",
       cancelText: "Cancel",
       onOk: async () => {
-        const clinicBranchAdminId = row.id;
-        deleteMutation.mutate(clinicBranchAdminId, {
+        const clinicPatientId = row.id;
+        deleteMutation.mutate(clinicPatientId, {
           onError: (error: any) => {
             const errorMessage =
               error?.response?.data?.error?.detail ||
-              "Failed to delete clinic branch admin.";
+              "Failed to delete patient.";
             message.error({ content: errorMessage });
           },
           onSuccess: () => {
             // Remove the row from the filteredData state on successful deletion
             setFilteredData((prev: any) =>
-              prev.filter((item: any) => item.id !== clinicBranchAdminId),
+              prev.filter((item: any) => item.id !== clinicPatientId),
             );
-            message.success("Branch admin deleted successfully.");
+            message.success("Patient deleted successfully.");
           },
           onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: ["branch-admins"] });
+            queryClient.invalidateQueries({ queryKey: ["patients"] });
             queryClient.invalidateQueries({ queryKey: ["clinic-users"] });
           },
         });
@@ -130,16 +125,11 @@ export default function BranchAdminsTable({
       dataIndex: "display_name",
       key: "display_name",
       render: (text, record) => (
-        <Title
-          onClick={() => {
-            setSelectedRow(record); // Set selected row data
-            setIsDetailsModalOpen(true); // Open the modal
-          }}
-          level={5}
-          style={{ marginBottom: 0, color: colorPrimary, cursor: "pointer" }}
-        >
-          {text}
-        </Title>
+        <Link href={`/patients/${record.id}`}>
+          <Title level={5} style={{ marginBottom: 0, color: colorPrimary }}>
+            {text}
+          </Title>
+        </Link>
       ),
     },
     {
@@ -149,17 +139,15 @@ export default function BranchAdminsTable({
       render: (text) => <Text>{text}</Text>,
     },
     {
-      title: "Subscription",
-      dataIndex: "subscription",
-      key: "subscription",
-      render: (text) => (
-        <Text style={{ textTransform: "uppercase" }}>{text}</Text>
-      ),
-    },
-    {
       title: "Email",
       dataIndex: "email",
       key: "email",
+      render: (text) => <Text>{text}</Text>,
+    },
+    {
+      title: "Contac number",
+      dataIndex: "contact_number",
+      key: "contact_number",
       render: (text) => <Text>{text}</Text>,
     },
     {
@@ -214,7 +202,6 @@ export default function BranchAdminsTable({
     onChange: onSelectChange,
   };
   const hasSelected = selectedRowKeys.length > 0;
-
   return (
     <>
       {hasSelected && (
@@ -255,13 +242,7 @@ export default function BranchAdminsTable({
         rowSelection={rowSelection}
         onChange={onTableChange}
       />
-      {isDetailsModalOpen && (
-        <DetailsModal
-          data={selectedRow}
-          isOpen={isDetailsModalOpen}
-          onClose={handleDetailsModalClose}
-        />
-      )}
+
       {isEditModalOpen && (
         <EditModal
           data={selectedRow}

@@ -1,11 +1,22 @@
 "use client";
 
-import { App, Button, Dropdown, Space, Table, theme, Typography } from "antd";
+import {
+  App,
+  Button,
+  Col,
+  Divider,
+  Dropdown,
+  Row,
+  Space,
+  Table,
+  theme,
+  Typography,
+} from "antd";
 import type { TableProps } from "antd";
 import type { MenuProps } from "antd";
 import { EllipsisOutlined } from "@ant-design/icons";
 import React, { useState } from "react";
-import { Edit, Eye, Trash } from "lucide-react";
+import { Edit, Eye, RotateCw, Trash } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import EditModal from "./edit";
 import DetailsModal from "./details";
@@ -17,12 +28,16 @@ interface BranchStaffsTableProps {
   data: any;
   isLoading: boolean;
   setFilteredData: React.Dispatch<React.SetStateAction<any>>;
+  pagination: any;
+  onTableChange: (pagination: any, filter: any, sorter: any) => void;
 }
 
 export default function BranchStaffsTable({
   data,
   isLoading,
   setFilteredData,
+  pagination,
+  onTableChange,
 }: BranchStaffsTableProps) {
   const queryClient = useQueryClient();
   const { modal, message } = App.useApp();
@@ -33,10 +48,6 @@ export default function BranchStaffsTable({
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<any>(null);
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-  });
 
   const handleMenuClick = (key: string, row: any) => {
     switch (key) {
@@ -100,12 +111,13 @@ export default function BranchStaffsTable({
           onSuccess: () => {
             // Remove the row from the filteredData state on successful deletion
             setFilteredData((prev: any) =>
-              prev.filter((item: any) => item.id !== clinicBranchStaffId)
+              prev.filter((item: any) => item.id !== clinicBranchStaffId),
             );
             message.success("Branch staff deleted successfully.");
           },
           onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ["branch-staffs"] });
+            queryClient.invalidateQueries({ queryKey: ["clinic-users"] });
           },
         });
       },
@@ -190,30 +202,58 @@ export default function BranchStaffsTable({
     },
   ];
 
-  const handleTableChange = (pagination: any) => {
-    setPagination({
-      current: pagination.current,
-      pageSize: pagination.pageSize,
-    });
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+
+  const onSelectChange = (newSelectedRowKeys: React.Key[]) => {
+    console.log("selectedRowKeys changed: ", newSelectedRowKeys);
+    setSelectedRowKeys(newSelectedRowKeys);
   };
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: onSelectChange,
+  };
+  const hasSelected = selectedRowKeys.length > 0;
 
   return (
     <>
+      {hasSelected && (
+        <>
+          <Row align="middle">
+            <Col>
+              <Text>Selected {selectedRowKeys.length} Item</Text>
+            </Col>
+            <Divider type="vertical" />
+            <Col>
+              <Button icon={<Trash size={16} />} type="link" danger>
+                Delete
+              </Button>
+            </Col>
+            <Divider type="vertical" />
+            <Col>
+              <Button
+                icon={<RotateCw size={16} />}
+                type="link"
+                onClick={() => {
+                  setSelectedRowKeys([]);
+                }}
+              >
+                Clear
+              </Button>
+            </Col>
+          </Row>
+        </>
+      )}
+
       <Table
         loading={isLoading}
         scroll={{ x: 1000 }}
         rowKey="id"
         columns={columns}
         dataSource={data || []}
-        pagination={{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          total: data ? data.length : 0,
-          showSizeChanger: false,
-          showTotal: (total, range) =>
-            `${range[0]}-${range[1]} of ${total} items`,
-        }}
-        onChange={handleTableChange}
+        pagination={pagination}
+        rowSelection={rowSelection}
+        onChange={onTableChange}
       />
       {isDetailsModalOpen && (
         <DetailsModal

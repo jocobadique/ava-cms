@@ -1,6 +1,5 @@
 "use client";
 
-import { updateClinicPractitionersService } from "@/services/practitioners";
 import {
   App,
   Button,
@@ -10,29 +9,53 @@ import {
   Row,
   Col,
   Divider,
+  Typography,
   Select,
 } from "antd";
 import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams } from "next/navigation";
+import { getClinicBranchesService } from "@/services/branches";
+import { createClinicPatientService } from "@/services/patients";
 import { handleFormErrors } from "@/utilities/helpers/handleFormErrors";
 
-interface EditProps {
-  data: any;
+const { Text } = Typography;
+
+interface AddProps {
   isOpen: boolean;
   onClose: () => void;
+  selectedBranchId?: string | null;
 }
 
-export default function EditModal({ data, isOpen, onClose }: EditProps) {
+export default function AddModal({
+  isOpen,
+  onClose,
+  selectedBranchId,
+}: AddProps) {
   const queryClient = useQueryClient();
+  const params = useParams();
+  const clinicId = params.clinicId;
   const { message } = App.useApp();
   const [form] = Form.useForm();
   const [isLoading, setLoading] = useState(false);
-  const [isFormChanged, setIsFormChanged] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && selectedBranchId) {
+      form.setFieldsValue({ branch_id: selectedBranchId });
+    } else if (isOpen && !selectedBranchId) {
+      form.setFieldsValue({ branch_id: undefined });
+    }
+  }, [isOpen, selectedBranchId, form]);
+
+  const { data: branchesData, isLoading: isBranchesDataLoading } = useQuery({
+    queryKey: ["branches", clinicId],
+    queryFn: () => getClinicBranchesService(clinicId),
+    enabled: !!clinicId, // Avoid fetching if clinicId is not available
+  });
 
   // Define update mutation using useMutation
-  const updateMutation = useMutation({
-    mutationFn: (values: any) =>
-      updateClinicPractitionersService(values.id, { ...values }),
+  const addMutation = useMutation({
+    mutationFn: (values: any) => createClinicPatientService({ ...values }),
     onMutate: async () => {
       setLoading(true);
     },
@@ -40,9 +63,9 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
       handleFormErrors(error, form, message);
     },
     onSuccess: async () => {
-      message.success({ content: "Practitioner updated successfully." });
-      queryClient.invalidateQueries({ queryKey: ["practitioner"] });
-      queryClient.invalidateQueries({ queryKey: ["practitioners"] });
+      message.success({ content: "Patient created successfully." });
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
+      queryClient.invalidateQueries({ queryKey: ["patient"] });
       queryClient.invalidateQueries({ queryKey: ["clinic-users"] });
       onClose();
     },
@@ -51,17 +74,10 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
     },
   });
 
-  // Set initial form values when modal opens or data changes
-  useEffect(() => {
-    if (isOpen && data) {
-      form.setFieldsValue(data);
-    }
-  }, [isOpen, data, form]);
-
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
-      updateMutation.mutate(values); // Trigger mutation
+      addMutation.mutate(values); // Trigger mutation
     } catch (error) {
       console.error("Validation error:", error);
     }
@@ -69,7 +85,7 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
 
   return (
     <Modal
-      title="Edit Practitioner"
+      title="Add Patient"
       centered
       mask={false}
       open={isOpen}
@@ -92,7 +108,6 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
           type="primary"
           loading={isLoading}
           onClick={handleOk}
-          disabled={!isFormChanged || isLoading}
         >
           Save
         </Button>,
@@ -103,33 +118,19 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
         form={form}
         layout="vertical"
         requiredMark="optional"
-        onValuesChange={() => {
-          setIsFormChanged(true);
-        }}
         clearOnDestroy
       >
-        <Form.Item name="id" hidden>
+        <Form.Item name="clinic_id" initialValue={clinicId} hidden>
+          <Input type="hidden" />
+        </Form.Item>
+        <Form.Item name="clinic_role" initialValue="patient" hidden>
           <Input type="hidden" />
         </Form.Item>
         <Row gutter={[16, 0]}>
           <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
             <Form.Item
-              label="Display Name"
-              name={["account", "display_name"]}
-              rules={[
-                {
-                  required: true,
-                  message: "Display name is required",
-                },
-              ]}
-            >
-              <Input size="large" placeholder="Display Name" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
-            <Form.Item
               label="First Name"
-              name={["account", "first_name"]}
+              name="first_name"
               rules={[
                 {
                   required: true,
@@ -143,7 +144,7 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
           <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
             <Form.Item
               label="Last Name"
-              name={["account", "last_name"]}
+              name="last_name"
               rules={[
                 {
                   required: true,
@@ -155,14 +156,14 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
             </Form.Item>
           </Col>
           <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
-            <Form.Item label="Middle Name" name={["account", "middle_name"]}>
+            <Form.Item label="Middle Name" name="middle_name">
               <Input size="large" placeholder="Middle name" />
             </Form.Item>
           </Col>
           <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
             <Form.Item
               label="Email"
-              name={["account", "email"]}
+              name="email"
               rules={[
                 {
                   required: true,
@@ -176,62 +177,49 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
           </Col>
           <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
             <Form.Item
-              label="Clinic"
-              name="clinic_name"
+              label="Contact Number"
+              name="contact_number"
               rules={[
                 {
                   required: true,
-                  message: "Clinic is required",
+                  message: "Contact number is required",
                 },
               ]}
             >
-              <Input disabled size="large" placeholder="Clinic" />
+              <Input size="large" placeholder="Contact Number" />
             </Form.Item>
           </Col>
           <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
             <Form.Item
-              label="Practice"
-              name="practice"
+              label="Branch"
+              name="branch_id"
               rules={[
                 {
                   required: true,
-                  message: "Practice is required",
+                  message: "Branch is required",
                 },
               ]}
             >
               <Select
+                loading={isBranchesDataLoading}
                 size="large"
-                placeholder="Select Practice"
-                options={[
-                  { value: "unknown", label: "Unknown" },
-                  { value: "dental", label: "Dental" },
-                  { value: "ophthal", label: "Opthal" },
-                  { value: "pedia", label: "Pedia" },
-                  { value: "ent", label: "ENT" },
-                  { value: "internal", label: "Internal" },
-                  { value: "derma", label: "Derma" },
-                  { value: "obgyn", label: "Obgyn" },
-                ]}
+                placeholder="Select Branch"
+                options={
+                  branchesData?.map((branch: any) => ({
+                    value: branch.id,
+                    label: branch.name,
+                  })) || []
+                }
               />
             </Form.Item>
           </Col>
-          <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
-            <Form.Item
-              label="License Number"
-              name="license_number"
-              rules={[
-                {
-                  required: true,
-                  message: "License number is required",
-                },
-              ]}
-            >
-              <Input size="large" placeholder="License number" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
-            <Form.Item label="Password" name="password">
-              <Input.Password size="large" placeholder="Password" />
+          <Col xs={24} sm={24} md={24} lg={24} xl={24} xxl={24}>
+            <Form.Item>
+              <Text type="secondary">
+                <strong>Note:</strong> Be sure to enter a valid email address.{" "}
+                <br /> A password reset email will be sent to the patient after
+                email verification.
+              </Text>
             </Form.Item>
           </Col>
         </Row>

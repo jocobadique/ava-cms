@@ -47,7 +47,7 @@ export default function AddModal({ isOpen, onClose }: AddProps) {
   const clinic_subscription = clinicData?.subscription;
   // const clinic_main_branch = clinicData?.branches[0].id;
   const clinic_main_branch = clinicData?.branches.find(
-    (branch: any) => branch.name === "Main"
+    (branch: any) => branch.name === "Main",
   )?.id;
 
   // Define update mutation using useMutation
@@ -62,6 +62,7 @@ export default function AddModal({ isOpen, onClose }: AddProps) {
     onSuccess: async () => {
       message.success({ content: "Clinic admin created successfully." });
       queryClient.invalidateQueries({ queryKey: ["clinic-admins"] });
+      queryClient.invalidateQueries({ queryKey: ["clinic-users"] });
       onClose();
     },
     onSettled: async () => {

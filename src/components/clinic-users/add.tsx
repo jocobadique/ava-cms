@@ -13,25 +13,26 @@ import {
 } from "antd";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getClinicBranchesService } from "@/services/branches";
 import { useParams } from "next/navigation";
-import { updateClinicBranchStaffService } from "@/services/branch-staffs";
+import { getClinicBranchesService } from "@/services/branches";
+import { getClinicService } from "@/services/clinics";
+import { createClinicUserService } from "@/services/clinic-users";
 import { handleFormErrors } from "@/utilities/helpers/handleFormErrors";
 
-interface EditProps {
-  data: any;
+interface AddProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function EditModal({ data, isOpen, onClose }: EditProps) {
+export default function AddModal({ isOpen, onClose }: AddProps) {
   const queryClient = useQueryClient();
   const params = useParams();
   const clinicId = params.clinicId;
   const { message } = App.useApp();
   const [form] = Form.useForm();
   const [isLoading, setLoading] = useState(false);
-  const [isFormChanged, setIsFormChanged] = useState(false);
+
+  const selectedRole = Form.useWatch("clinic_role", form);
 
   const { data: branchesData } = useQuery({
     queryKey: ["branches", clinicId],
@@ -39,10 +40,31 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
     enabled: !!clinicId, // Avoid fetching if clinicId is not available
   });
 
+  const { data: clinicData } = useQuery({
+    queryKey: ["clinic", clinicId],
+    queryFn: () => getClinicService(clinicId),
+    enabled: !!clinicId, // Avoid fetching if clinicId is not available
+  });
+
+  const clinic_subscription = clinicData?.subscription;
+  const clinic_main_branch = clinicData?.branches.find(
+    (branch: any) => branch.name === "Main",
+  )?.id;
+
+  const isBranchDisabled = !selectedRole || selectedRole === "clinic_admin";
+
+  useEffect(() => {
+    if (isBranchDisabled) {
+      form.setFieldValue("branch_id", clinic_main_branch);
+    } else if (selectedRole && !form.getFieldValue("branch_id")) {
+      // Default to main branch only when a valid role is picked
+      form.setFieldValue("branch_id", clinic_main_branch);
+    }
+  }, [selectedRole, isBranchDisabled, form, clinic_main_branch]);
+
   // Define update mutation using useMutation
-  const updateMutation = useMutation({
-    mutationFn: (values: any) =>
-      updateClinicBranchStaffService(values.id, { ...values }),
+  const addMutation = useMutation({
+    mutationFn: (values: any) => createClinicUserService({ ...values }),
     onMutate: async () => {
       setLoading(true);
     },
@@ -50,10 +72,13 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
       handleFormErrors(error, form, message);
     },
     onSuccess: async () => {
-      message.success({ content: "Branch staff updated successfully." });
-
-      queryClient.invalidateQueries({ queryKey: ["branch-staffs"] });
+      message.success({ content: "Clinic user created successfully." });
       queryClient.invalidateQueries({ queryKey: ["clinic-users"] });
+      queryClient.invalidateQueries({ queryKey: ["clinic-admins"] });
+      queryClient.invalidateQueries({ queryKey: ["branch-admins"] });
+      queryClient.invalidateQueries({ queryKey: ["branch-staffs"] });
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
+      queryClient.invalidateQueries({ queryKey: ["practitioners"] });
       onClose();
     },
     onSettled: async () => {
@@ -61,24 +86,10 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
     },
   });
 
-  // Set initial form values when modal opens or data changes
-
-  useEffect(() => {
-    if (isOpen && data) {
-      const initialValues = { ...data };
-
-      if (!data.branch_id && branchesData?.length > 0) {
-        initialValues.branch_id = branchesData[0].id;
-      }
-
-      form.setFieldsValue(initialValues);
-    }
-  }, [isOpen, data, branchesData, form]);
-
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
-      updateMutation.mutate(values); // Trigger mutation
+      addMutation.mutate(values); // Trigger mutation
     } catch (error) {
       console.error("Validation error:", error);
     }
@@ -86,7 +97,7 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
 
   return (
     <Modal
-      title="Edit Staff"
+      title="Add Clinic User"
       centered
       mask={false}
       open={isOpen}
@@ -109,7 +120,6 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
           type="primary"
           loading={isLoading}
           onClick={handleOk}
-          disabled={!isFormChanged || isLoading}
         >
           Save
         </Button>,
@@ -120,32 +130,12 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
         form={form}
         layout="vertical"
         requiredMark="optional"
-        onValuesChange={() => {
-          setIsFormChanged(true);
-        }}
         clearOnDestroy
       >
-        <Form.Item name="id" hidden>
-          <Input type="hidden" />
-        </Form.Item>
-        <Form.Item name="clinic_id" hidden>
+        <Form.Item name="clinic_id" initialValue={clinicId} hidden>
           <Input type="hidden" />
         </Form.Item>
         <Row gutter={[16, 0]}>
-          <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
-            <Form.Item
-              label="Display Name"
-              name="display_name"
-              rules={[
-                {
-                  required: true,
-                  message: "Display name is required",
-                },
-              ]}
-            >
-              <Input size="large" placeholder="Display Name" />
-            </Form.Item>
-          </Col>
           <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
             <Form.Item
               label="First Name"
@@ -210,6 +200,32 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
           </Col>
           <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
             <Form.Item
+              initialValue={clinic_subscription}
+              label="Subscription"
+              name="subscription"
+              rules={[
+                {
+                  required: true,
+                  message: "Subscription  is required",
+                },
+              ]}
+            >
+              <Select
+                disabled
+                size="large"
+                placeholder="Select Subscription"
+                options={[
+                  { value: "unknown", label: "Unknown" },
+                  { value: "basic", label: "Basic" },
+                  { value: "pro", label: "Pro" },
+                  { value: "biz", label: "Biz" },
+                  { value: "prime", label: "Prime" },
+                ]}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
+            <Form.Item
               label="Clinic Role"
               name="clinic_role"
               rules={[
@@ -220,11 +236,12 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
               ]}
             >
               <Select
-                disabled
                 size="large"
                 placeholder="Select Clinic Role"
                 options={[
                   { value: "clinic_admin", label: "Clinic Admin" },
+                  { value: "patient", label: "Patient" },
+                  { value: "practitioner", label: "Practitioner" },
                   { value: "branch_admin", label: "Branch Admin" },
                   { value: "staff", label: "Staff" },
                 ]}
@@ -243,7 +260,7 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
               ]}
             >
               <Select
-                disabled
+                disabled={isBranchDisabled}
                 size="large"
                 placeholder="Select Branch"
                 options={
@@ -253,6 +270,43 @@ export default function EditModal({ data, isOpen, onClose }: EditProps) {
                   })) || []
                 }
               />
+            </Form.Item>
+          </Col>
+
+          <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
+            <Form.Item
+              label="Password"
+              name="password"
+              rules={[
+                {
+                  required: true,
+                  message: "Password is required",
+                },
+              ]}
+            >
+              <Input.Password size="large" placeholder="Password" />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
+            <Form.Item
+              label="Password confirm"
+              name="password_confirm"
+              rules={[
+                {
+                  required: true,
+                  message: "Password confirm is required",
+                },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (!value || getFieldValue("password") === value) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error("Passwords do not match!"));
+                  },
+                }),
+              ]}
+            >
+              <Input.Password size="large" placeholder="Password Confirm" />
             </Form.Item>
           </Col>
         </Row>
