@@ -1,36 +1,31 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Automated Vital Assistant CMS
 
-## Getting Started
+A custom CMS built for an EMR platform that streamlines patient record management and clinic operations through an intuitive web interface.
 
-First, run the development server:
+## Overview
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+AVA CMS serves as the administrative backbone of the EMR platform, enabling clinics and healthcare staff to efficiently manage patient data, medical records, and operational content while maintaining data integrity, security, and compliance-ready architecture.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Features
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+- ✅ Patient record management
+- ✅ Secure authentication and authorization
+- ✅ Protected routes for all CMS operations
+- ✅ Server-side validation of patient data
+- ✅ Reliable session and state management
 
-## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+## Tech Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [Next.js 15](https://nextjs.org) - React framework with App Router
+- [TypeScript](https://www.typescriptlang.org) - Type safety
+- [Tanstack Query](https://tanstack.com/query/latest) - Server-state utilities and data fetching
+- [Zustand](https://zustand.docs.pmnd.rs/getting-started/introduction) - Global state mamangement
+- [Ant Design](https://ant.design/) - Styling
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Author
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+[Joco Badique](https://jocobadique.vercel.app/)  
+ Software Engineer
