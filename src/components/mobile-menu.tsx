@@ -31,7 +31,7 @@ export default function MobileMenus() {
     if (pathname.startsWith("/business-intelligence/general")) return ["7-1"];
     if (pathname.startsWith("/business-intelligence/basic-stats"))
       return ["7-2"];
-    if (pathname.startsWith("/business-intelligence/other")) return ["7-3"];
+    // if (pathname.startsWith("/business-intelligence/other")) return ["7-3"];
     return [];
   };
 
@@ -67,9 +67,9 @@ export default function MobileMenus() {
       case "7-2":
         router.push("/business-intelligence/basic-stats");
         break;
-      case "7-3":
-        router.push("/business-intelligence/other");
-        break;
+      // case "7-3":
+      //   router.push("/business-intelligence/other");
+      //   break;
       default:
         break;
     }
@@ -138,10 +138,10 @@ export default function MobileMenus() {
               key: "7-2",
               label: "Basic Stats",
             },
-            {
-              key: "7-3",
-              label: "Other",
-            },
+            // {
+            //   key: "7-3",
+            //   label: "Other",
+            // },
           ],
         },
       ]}
