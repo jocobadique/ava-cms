@@ -80,14 +80,14 @@ export default function UserAvatar() {
   };
 
   const items: MenuProps["items"] = [
-    {
-      key: "1",
-      label: "Profile",
-      icon: <User size={16} />,
-    },
-    {
-      type: "divider",
-    },
+    // {
+    //   key: "1",
+    //   label: "Profile",
+    //   icon: <User size={16} />,
+    // },
+    // {
+    //   type: "divider",
+    // },
     {
       key: "2",
       label: "Dark mode",
