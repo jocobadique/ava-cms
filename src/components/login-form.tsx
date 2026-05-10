@@ -7,6 +7,7 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import {
+  Alert,
   Button,
   Card,
   Checkbox,
@@ -22,6 +23,10 @@ import Cookies from "js-cookie";
 import { useState } from "react";
 
 const { Title, Text } = Typography;
+
+const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+
+const DEMO_CREDENTIALS = { email: "admin@demo.com", password: "demo1234" };
 
 const LoginForm = () => {
   const { message } = App.useApp();
@@ -55,8 +60,7 @@ const LoginForm = () => {
 
         Cookies.set("ava_cms_session", JSON.stringify(tempSession), {
           expires: 1 / 24,
-          secure: true,
-          sameSite: "Strict",
+          ...(!isDemo && { secure: true, sameSite: "Strict" }),
         });
 
         try {
@@ -79,8 +83,7 @@ const LoginForm = () => {
 
       Cookies.set("ava_cms_session", JSON.stringify(sessionData), {
         expires: 1 / 6, // 4 hours
-        secure: true,
-        sameSite: "Strict",
+        ...(!isDemo && { secure: true, sameSite: "Strict" }),
       });
 
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -117,7 +120,7 @@ const LoginForm = () => {
             <Form
               form={form}
               name="Login Form"
-              initialValues={{ remember: true }}
+              initialValues={{ remember: true, ...(isDemo && DEMO_CREDENTIALS) }}
               onFinish={onFinish}
             >
               <Form.Item
@@ -157,6 +160,16 @@ const LoginForm = () => {
                 </Flex>
               </Form.Item>
 
+              {isDemo && (
+                <Form.Item noStyle>
+                  <Alert
+                    message="Demo mode — credentials are pre-filled"
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                  />
+                </Form.Item>
+              )}
               <Form.Item noStyle>
                 <Button
                   loading={isLoading}

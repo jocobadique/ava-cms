@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port $MDX_CMS_PORT",
+    "dev:demo": "next dev --port 3000",
     "build": "next build",
     "start": "next start --port $MDX_CMS_PORT",
     "lint": "next lint"
@@ -24,6 +25,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-highlight-words": "^0.21.0",
+    "recharts": "^3.8.1",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
